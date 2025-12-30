@@ -8,6 +8,7 @@ import 'package:open_wearable/apps/posture_tracker/model/earable_attitude_tracke
 import 'package:open_wearable/apps/posture_tracker/view/posture_tracker_view.dart';
 import 'package:open_wearable/apps/widgets/select_earable_view.dart';
 import 'package:open_wearable/apps/widgets/app_tile.dart';
+import 'package:open_wearable/apps/rhythm_trainer/view/rhythm_trainer_view.dart';
 
 
 class AppInfo {
@@ -63,6 +64,16 @@ List<AppInfo> _apps = [
         );
       },
     ),
+  ),
+  AppInfo(
+    logoPath: "lib/apps/rhythm_trainer/assets/logo.png",
+    title: "Rhythm Trainer",
+    description: "Train your sense of rhythm with audio cues",
+    widget: SelectEarableView(startApp: (wearable, sensorConfigProvider) {
+
+      return RhythmTrainerView(wearable: wearable);
+      
+    },),
   ),
 ];
 

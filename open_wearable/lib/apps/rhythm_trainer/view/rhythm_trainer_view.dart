@@ -39,8 +39,7 @@ class RhythmTrainerView extends StatelessWidget {
         return sensorTuple;
 
       });
-
-    
+          
     }
 
     return PlatformScaffold(
@@ -78,6 +77,11 @@ class _SensorValueViewState extends State<SensorValueView> {
   late final Stream<List<SensorValue>> sensorDataStream;
   List<SensorValue> sensorValuesAccelero = [];
   List<SensorValue> sensorValuesGyro = [];
+  late StreamSubscription<List<SensorValue>> sub;
+  bool motionDetected = false;
+  int timeStampLastZeroCrossing = 0;
+  int counterMotion = 0;
+  List<int> motionTimestamps = [];
   
 
   @override
@@ -86,6 +90,52 @@ class _SensorValueViewState extends State<SensorValueView> {
     acceleroMeter = widget.acceleroMeter;
     gyroscope = widget.gyroscope;
     sensorDataStream = widget.sensorDataStream;
+    setConfigForSensor(acceleroMeter);
+    setConfigForSensor(gyroscope);
+    int windowSize = 60;
+  
+    sub = sensorDataStream.listen((event) {
+  
+      sensorValuesAccelero.add(event[0]);
+      sensorValuesGyro.add(event[1]);
+      
+
+      if(sensorValuesGyro.isNotEmpty && sensorValuesGyro.length == windowSize){
+        int timeDifference = sensorValuesGyro.last.timestamp - sensorValuesGyro.first.timestamp;
+        //print("Time for 60 gyro samples: ${timeDifference} s");
+      }
+      
+
+      if(detectMotion(sensorValuesGyro, sensorValuesAccelero, windowSize)){
+
+        setState(() {
+          motionDetected = true;
+        });
+
+        Timer(Duration(milliseconds: 100), () {
+          setState(() {
+
+            motionDetected = false;
+          });
+        });
+
+        
+      }
+          
+    keepWindowSize(sensorValuesAccelero, windowSize, 0.5);
+    keepWindowSize(sensorValuesGyro, windowSize, 0.5);    
+  });
+
+
+    print("New Init State");
+  }
+
+  @override
+  void dispose() {
+    
+    super.dispose();
+    sub.cancel();
+    print("Disposed Sensor Value View");
   }
 
 
@@ -94,22 +144,7 @@ class _SensorValueViewState extends State<SensorValueView> {
 
     return ListView(
       children: [
-        StreamBuilder(
-          stream: sensorDataStream,
-          builder: (context, snapshot) {
-                
-            if(snapshot.hasData) {
-
-              sensorValuesAccelero.add(snapshot.data![0]);
-              sensorValuesGyro.add(snapshot.data![1]);
-              detectMotion(sensorValuesGyro, sensorValuesAccelero, 12, 0.0);
-              return Column(children: buildSensorValueTiles(sensorValuesAccelero, sensorValuesGyro));
-            }else {
-
-              return PlatformText("Waiting for sensor data...");
-            }
-            
-          },),
+        test(),
         PlatformElevatedButton(
           child: PlatformText("Start Streaming"),
           onPressed: () {
@@ -122,78 +157,54 @@ class _SensorValueViewState extends State<SensorValueView> {
     );
   }
 
-  List<PlatformListTile> buildSensorValueTiles(List<SensorValue> acceleroData, List<SensorValue> gyroData) {
+  Widget test(){
 
-    final List<PlatformListTile> tiles = [];   
-    List<double> acceleroMeterData = acceleroData.last.valueStrings.map((e) => double.tryParse(e) ?? 0.0).toList();
-    List<double> gyroscopeData = gyroData.last.valueStrings.map((e) => double.tryParse(e) ?? 0.0).toList();
+    if(motionDetected){
+      
+      return PlatformListTile(
+        title: Text("Rhythm Alert"),
+        subtitle: Text("High rotation detected!"),
+      );
 
-    tiles.add(
-      PlatformListTile(
-        title: Text("Accelerometer"),
-        subtitle: Text(acceleroData.last.valueStrings.join(", ")),
-      ),
-    );
-    tiles.add(
-      PlatformListTile(
-        title: Text("Gyroscope"),
-        subtitle: Text(gyroData.last.valueStrings.join(", ")),
-      ),
-    );
-
-    if (gyroscopeData[2] > 40.0 && acceleroMeterData[1] > -0.65 && acceleroMeterData[0] < -0.75){
-      tiles.add(
-        PlatformListTile(
-          title: Text("Rhythm Alert"),
-          subtitle: Text("High rotation detected!"),
-        ),
+    } else {
+      return PlatformListTile(
+        title: Text("Test"),
+        subtitle: Text("Waiting for motion"),
       );
     }
-
-    return tiles;
-    
   }
 
+  
   void setConfigForSensor(Sensor sensor) {
 
     SensorConfiguration config = sensor.relatedConfigurations.first;
       if (config is ConfigurableSensorConfiguration) {
         List<ConfigurableSensorConfigurationValue> values = config.values;
-        if (config.availableOptions.any((o) => o is StreamSensorConfigOption)) {
-          ConfigurableSensorConfigurationValue streamValue =
-            values.firstWhere((v) => v.options.any((o) => o is StreamSensorConfigOption));
 
-          config.setConfiguration(streamValue);
-        }
+        if (config.availableOptions.any((o) => o is StreamSensorConfigOption)) {  
+
+          late ConfigurableSensorConfigurationValue streamValue;
+             
+          for(var val in values){
+
+            print("normal value: ${val.toString()}");
+
+            if(val.options.any((o) => o is StreamSensorConfigOption) && val.toString().contains("100.0")){
+              print("selected value: ${val.toString()}");
+              streamValue = val;
+            }
+          }      
+          config.setConfiguration(streamValue);  
+                   
+        }   
       }
   }
 
-  bool detectWindow(List<SensorValue> gyroValues, List<SensorValue> acceleroValues, int windowSize, double overLap){
+  bool detectMotion(List<SensorValue> gyroValues, List<SensorValue> acceleroValues, int windowSize){
 
-    if(overLap < 0 || overLap >= 1){
-      throw ArgumentError("overLap must be between 0 and 1");
-    }
-
-    int currentLength = gyroValues.length;
-
-    if(currentLength < windowSize){
+    if(gyroValues.length != windowSize || acceleroValues.length != windowSize){
       return false;
     }
-
-    int overlappingElements = (windowSize * overLap).toInt();
-    return (currentLength + overlappingElements) % windowSize == 0;
-
-  }
-
-  void detectMotion(List<SensorValue> gyroValues, List<SensorValue> acceleroValues, int windowSize, double overLap){
-
-    if (!detectWindow(gyroValues, acceleroValues, windowSize, overLap)) {
-
-      //print("No window detected");
-      return;
-    }
-
-    //print("Window detected");
 
     List<List<double>> gyroWindow = gyroValues.sublist(gyroValues.length - windowSize).map(convertSensorValueToDouble).toList();
     List<List<double>> acceleroWindow = acceleroValues.sublist(acceleroValues.length - windowSize).map(convertSensorValueToDouble).toList();
@@ -207,28 +218,130 @@ class _SensorValueViewState extends State<SensorValueView> {
 
     double meanGyroZ = mean(gyroZ);
     double meanGyroY = mean(gyroY);
-    double varianceGyroZ = variance(gyroZ, meanGyroZ);
-    double varianceGyroY = variance(gyroY, meanGyroY);
+    double stdDeviationGyroZ = stdDeviation(gyroZ, meanGyroZ);
+    double stdDeviationGyroY = stdDeviation(gyroY, meanGyroY);
     double covariance = sum(List.generate(gyroZ.length, (i) => (gyroZ[i] - meanGyroZ) * (gyroY[i] - meanGyroY))) / gyroZ.length;
-    double correlationGyroZY = covariance / (varianceGyroZ * varianceGyroY);
+    double correlationGyroZY = covariance / (stdDeviationGyroZ * stdDeviationGyroY);
 
     double meanAcceleroX = mean(acceleroX);
     double meanAcceleroY = mean(acceleroY);
-    double varianceAcceleroX = variance(acceleroX, meanAcceleroX);
-    double varianceAcceleroY = variance(acceleroY, meanAcceleroY);
+    double stdDeviationAcceleroX = stdDeviation(acceleroX, meanAcceleroX);
+    double stdDeviationAcceleroY = stdDeviation(acceleroY, meanAcceleroY);
     double covarianceAccelero = sum(List.generate(acceleroX.length, (i) => (acceleroX[i] - meanAcceleroX) * (acceleroY[i] - meanAcceleroY))) / acceleroX.length;
-    double correlationAcceleroXY = covarianceAccelero / (varianceAcceleroX * varianceAcceleroY);
+    double correlationAcceleroXY = covarianceAccelero / (stdDeviationAcceleroX * stdDeviationAcceleroY);
 
     double sma = maxAbs(gyroZ) + maxAbs(gyroY) + maxAbs(gyroX);
 
+    double old = gyroZ[0];
+    bool zeroCrossingDetected = false;
+    double crossingValue = -9999.0;
 
-    print("Correlation between gyro Z and Y: $correlationGyroZY");
-    print("Correlation between accelero X and Y: $correlationAcceleroXY");
+    int index = 0;
+    int zeroCrossingTimeStamp = 0;
+    double zeroCrossingValue = 0.0;
+    bool tinyCrossing = false;
 
     
-    if(correlationGyroZY > 0.7 && correlationAcceleroXY < -0.7 && sma > 50.0){
-      print("Significant motion detected with correlation: $correlationGyroZY and $correlationAcceleroXY");
+    for(double val in gyroZ){
+
+      if(old >= 0.0 && val < 0.0){
+        
+        zeroCrossingDetected = true;
+        crossingValue = val;
+
+        SensorValue currentSensorValue = gyroValues[gyroValues.length - windowSize + index];
+        if(gyroValues.length - windowSize + index - 20 >= 0){
+          SensorValue somePreviousSensorValue = gyroValues[gyroValues.length - windowSize + index - 20];
+          double valuePrevious = double.tryParse(somePreviousSensorValue.valueStrings[2]) ?? 0.0;
+          
+          tinyCrossing = valuePrevious < 20.0;
+        }
+        
+        zeroCrossingTimeStamp= currentSensorValue.timestamp;
+        zeroCrossingValue = double.tryParse(currentSensorValue.valueStrings[2]) ?? 0.0;
+
+        if(zeroCrossingTimeStamp == timeStampLastZeroCrossing || tinyCrossing){
+          return false;
+        }
+
+        timeStampLastZeroCrossing = zeroCrossingTimeStamp;
+        break;
+        
+      }
+
+      index++;
+      old = val;
+      
+      
     }
+
+    if((correlationGyroZY > 0.7 && correlationAcceleroXY < -0.1) && (sma > 70.0 && zeroCrossingDetected)){
+
+      counterMotion++;
+
+      String debugMsg = "";
+      print("########## New Motion Detected ##########\n");
+
+      int internalCounter = 0;
+      for(double val in gyroZ){
+        internalCounter++;
+        print("$internalCounter: $val");
+        
+      }
+
+      String featuresDebug = "";
+
+      featuresDebug += "Motion detected: true\n";
+      featuresDebug += "Correlation Gyro ZY: $correlationGyroZY\n";
+      featuresDebug += "Correlation Accelero XY: $correlationAcceleroXY\n";
+      featuresDebug += "SMA: $sma\n";
+      featuresDebug += "Zero crossing detected: $zeroCrossingDetected\n";
+      featuresDebug += "Crossing value: $crossingValue\n";
+      featuresDebug += "Zero crossing value: $zeroCrossingValue\n";
+      featuresDebug += "Zero crossing timestamp: $zeroCrossingTimeStamp\n";
+      featuresDebug += "Motion count: $counterMotion\n";
+      featuresDebug += "#########################################\n";
+      print(debugMsg);
+      print(featuresDebug);
+
+      motionTimestamps.add(zeroCrossingTimeStamp);
+      checkRhythm(motionTimestamps, [1.0, 0.5, 0.5, 1, 0.5]);
+      //bpmCalculation();
+
+      //if(motionTimestamps.length == 4) resetTimeStamps();
+      
+      
+      //print("Significant motion detected with correlation: $correlationGyroZY, $correlationAcceleroXY , SMA: $sma, Zero crossing: $zeroCrossingDetected");
+      return true;
+
+    }else{
+
+      String debugMsg = "";
+
+      //print("########## No Significant Motion ##########\n");
+      int internalCounter = 0;
+      for(double val in gyroZ){
+        internalCounter++;
+        //print("$internalCounter: $val");
+      }
+      String featuresDebug = "";
+      featuresDebug += "Motion detected: false\n";
+      featuresDebug += "Buffer length: ${gyroValues.length}\n";
+      featuresDebug += "Window buffer: ${gyroWindow.length}\n";
+      featuresDebug += "gyroZ length: ${gyroZ.length}\n";
+      featuresDebug += "Internal counter: $internalCounter\n";
+      featuresDebug += "Correlation Gyro ZY: $correlationGyroZY\n";
+      featuresDebug += "Correlation Accelero XY: $correlationAcceleroXY\n";
+      featuresDebug += "SMA: $sma\n";
+      featuresDebug += "Zero crossing detected: $zeroCrossingDetected\n";
+      featuresDebug += "#########################################\n";
+      //print(debugMsg);
+      //print(featuresDebug);
+
+      //print("No significant motion detected. Correlation: $correlationGyroZY and $correlationAcceleroXY, SMA: $sma, Zero crossing: $zeroCrossingDetected");
+    }
+
+    return false;
 
   }
 
@@ -244,13 +357,8 @@ class _SensorValueViewState extends State<SensorValueView> {
 
   }
 
-  double max(List<double> vals){
-
-    return vals.fold(0.0, (a, b) => a > b ? a : b);
-
-  }
-
-  double variance(List<double> vals, double mean){
+  
+  double stdDeviation(List<double> vals, double mean){
 
     return sqrt(sum(vals.map((e) => (e - mean) * (e - mean)).toList()) / vals.length);
 
@@ -268,7 +376,68 @@ class _SensorValueViewState extends State<SensorValueView> {
 
   }
 
+  void bpmCalculation(){
 
- 
+    int length = motionTimestamps.length;
+
+    if(length != 4) return;
+
+    int sum = 0;
+
+    for(int i = 1; i < length; i++){
+
+      print("Time diff $i: ${(motionTimestamps[i] - motionTimestamps[i - 1]).toDouble() / 1000.0} s");
+
+      sum += (motionTimestamps[i] - motionTimestamps[i - 1]);
+
+    }
+
+    double avgTimeDiff = sum / (length - 1) / 1000.0; 
+    int bpm = (60.0 / avgTimeDiff).toInt() * 2; // For some reason we need to multiply by 2 to get the correct BPM
+    print("Estimated BPM: $bpm");
+    
+  }
+
+  void resetTimeStamps(){
+
+    motionTimestamps = [];
+  }
+
+  void keepWindowSize(List<SensorValue> list, int windowSize, double overLap){
+
+    int bufferLength = list.length;
+    int overlappingElements = (windowSize * overLap).toInt();
+    int remainingLength = windowSize - overlappingElements;
+
+    if(bufferLength == windowSize){
+
+      list.removeRange(0, remainingLength);
+
+    }
+    
+  }
+
+  void checkRhythm(List<int> motionTimestamps, List<double> timeStampsExpectedDifferences){
+
+    if(timeStampsExpectedDifferences.length + 1 != motionTimestamps.length) return;
+
+    for(int i = 1; i < motionTimestamps.length; i++){
+
+      double timeDiff = (motionTimestamps[i] - motionTimestamps[i - 1]) / 1000 / 2.0;
+      print("Time diff $i: $timeDiff s");
+      print("Expected time diff $i: ${timeStampsExpectedDifferences[i - 1]} s");
+
+      if((timeDiff - timeStampsExpectedDifferences[i - 1]).abs() > 0.2){
+
+        print("Rhythm off at interval $i");
+
+      } else {
+
+        print("Rhythm on at interval $i");
+      }
+    }
+
+    motionTimestamps.clear();
+  }
 
 }

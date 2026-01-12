@@ -3,19 +3,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_platform_widgets/flutter_platform_widgets.dart';
 import 'package:open_earable_flutter/open_earable_flutter.dart';
+import 'package:open_wearable/apps/rhythm_trainer/controller/bpm_calculator_controller.dart';
 import 'package:open_wearable/apps/rhythm_trainer/model/bpmCalculator.dart';
-import 'package:open_wearable/apps/rhythm_trainer/model/motion_updatable.dart';
-import 'package:open_wearable/apps/rhythm_trainer/model/pipeline/feature_extractors/statistical_feature_extractor.dart';
-import 'package:open_wearable/apps/rhythm_trainer/model/pipeline/feature_extractors/zero_crossing_extractor.dart';
-import 'package:open_wearable/apps/rhythm_trainer/model/pipeline/motion_Pipeline.dart';
-import 'package:open_wearable/apps/rhythm_trainer/model/pipeline/motion_detectors/nod_motion_detector.dart';
-import 'package:open_wearable/apps/rhythm_trainer/model/pipeline/window_Manager.dart';
 import 'package:open_wearable/apps/rhythm_trainer/view/start_restart_button.dart';
 
 
 class BpmCalculatorView extends StatefulWidget {
 
-  final Stream<List<SensorValue>>? sensorDataStream;
+  final Stream<List<SensorValue>> sensorDataStream;
   final BPMcalculator bpmCalculator;
   const BpmCalculatorView({super.key, required this.sensorDataStream, required this.bpmCalculator});
 
@@ -25,31 +20,20 @@ class BpmCalculatorView extends StatefulWidget {
 
 class _BpmCalculatorViewState extends State<BpmCalculatorView> {
 
-  late Stream<List<SensorValue>>? sensorDataStream;
-  late BPMcalculator bpmCalculator;
-  
-  MotionPipeline motionPipeline = MotionPipeline(
-    windowManagers: [
-      WindowManager(windowSize: 60, overlap: 0.5),
-      WindowManager(windowSize: 60, overlap: 0.5),
-    ],
-    featureExtractors: [
-      [StatisticalFeatureExtractor()],
-      [StatisticalFeatureExtractor(), ZeroCrossingExtractor()],
-    ],
-    motionDetector: NodMotionDetector(),
-  );
-
-  StreamSubscription<List<SensorValue>>? sub;
+  late BPMCalculatorController bpmCalculatorController;
   bool motionDetected = false;
+  
   
   @override
   void initState() {   
 
     super.initState();
-    sensorDataStream = widget.sensorDataStream;
-    
-    bpmCalculator = widget.bpmCalculator;
+   
+    bpmCalculatorController = BPMCalculatorController(
+      sensorDataStream: widget.sensorDataStream,
+      bpmCalc: widget.bpmCalculator,
+    );
+
     print("New Init State");
   }
 
@@ -57,18 +41,15 @@ class _BpmCalculatorViewState extends State<BpmCalculatorView> {
   void didUpdateWidget(covariant BpmCalculatorView oldWidget) {
     
     super.didUpdateWidget(oldWidget);
-    sensorDataStream = oldWidget.sensorDataStream != widget.sensorDataStream ? widget.sensorDataStream : oldWidget.sensorDataStream; 
-    bpmCalculator = oldWidget.bpmCalculator != widget.bpmCalculator ? widget.bpmCalculator : oldWidget.bpmCalculator;
-
+    bpmCalculatorController.updateStream(widget.sensorDataStream);
   }
 
   @override
   void dispose() {
 
-    sub?.cancel();
+    bpmCalculatorController.reset();
     print("Disposed Sensor Value View");
     super.dispose();
-    
   }
 
 
@@ -87,58 +68,40 @@ class _BpmCalculatorViewState extends State<BpmCalculatorView> {
             
               setState(() {
 
-                bpmCalculator = BPMcalculator();
-                motionPipeline = MotionPipeline(
-                  windowManagers: [
-                    WindowManager(windowSize: 60, overlap: 0.5),
-                    WindowManager(windowSize: 60, overlap: 0.5),
-                  ],
-                  featureExtractors: [
-                    [StatisticalFeatureExtractor()],
-                    [StatisticalFeatureExtractor(), ZeroCrossingExtractor()],
-                  ],
-                  motionDetector: NodMotionDetector(),
-                );
-
-                sub?.cancel();
-                
+                bpmCalculatorController.reset();
                 motionDetected = false;
               
-              });
-              
+              });         
             },
 
             onStart: () {
 
-              sub = sensorDataStream?.listen((event) {
-
-                int motion = motionPipeline.processData(event);
-
-                if(motion != -1){
-
-                  bpmCalculator.update(motion);
-
-                  if(!bpmCalculator.isCalculating){
-
-                    print("BPM Calculation finished, resetting...");
-                  
-
-                  }
-
-                  setState(() {
-                    motionDetected = true;
-                  });
-
-                  Timer(Duration(milliseconds: 100), () {
-                    setState(() {
-
-                      motionDetected = false;
-                    });
-                  });
-                }
-              });  
+              bpmCalculatorController.start();
             },
           ),
+
+          AnimatedBuilder(
+            animation: bpmCalculatorController,
+            
+            builder: (_, __){
+
+              bool calculating = bpmCalculatorController.isCalculating();
+
+              if(calculating){
+
+                return PlatformText("Calculating BPM...");
+
+              } else {
+
+                int bpm = widget.bpmCalculator.getBPM();
+                bpmCalculatorController.reset();
+                return PlatformText("Calculated BPM: $bpm");   
+              }
+            },
+            
+          ),
+
+
         ],
       ),
     );

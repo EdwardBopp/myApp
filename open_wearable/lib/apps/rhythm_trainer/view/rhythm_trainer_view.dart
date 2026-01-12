@@ -9,7 +9,6 @@ import 'package:open_wearable/apps/rhythm_trainer/model/musical_symbol.dart';
 import 'package:open_wearable/apps/rhythm_trainer/view/bpm_calculator_view.dart';
 import 'package:open_wearable/apps/rhythm_trainer/view/excersise_view.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:open_wearable/apps/rhythm_trainer/model/motion_detector.dart';
 import 'package:open_wearable/view_models/sensor_configuration_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -107,7 +106,7 @@ class _RhythmTrainerViewState extends State<RhythmTrainerView> {
                     
                     child:  BpmCalculatorView(
                       
-                      sensorDataStream: sensorDataStream,                    
+                      sensorDataStream: sensorDataStream!,                    
                       bpmCalculator: BPMcalculator(),
                     ),
                   );
@@ -140,7 +139,7 @@ class _RhythmTrainerViewState extends State<RhythmTrainerView> {
                                       ),
                                       body: ExerciseView(
 
-                                        sensorDataStream: sensorDataStream,                               
+                                        sensorDataStream: sensorDataStream!,                               
                                         exercise: Exercise(
                                           rhythmPattern: [MusicalSymbol.quarterNote, MusicalSymbol.restHalf, MusicalSymbol.quarterNote], 
                                           name: "Exercise 1",),
@@ -173,7 +172,7 @@ class _RhythmTrainerViewState extends State<RhythmTrainerView> {
                                     ),
                                     body: ExerciseView(
                                       
-                                      sensorDataStream: sensorDataStream,
+                                      sensorDataStream: sensorDataStream!,
                                       exercise: Exercise(
                                         rhythmPattern: [MusicalSymbol.restEighth, MusicalSymbol.eighthNote, MusicalSymbol.quarterNote, MusicalSymbol.quarterNote, MusicalSymbol.quarterNote], 
                                         name: "Exercise 2",

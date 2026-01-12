@@ -6,7 +6,7 @@ import 'package:open_wearable/apps/rhythm_trainer/model/pipeline/motion_Pipeline
 import 'package:open_wearable/apps/rhythm_trainer/model/pipeline/motion_detectors/nod_motion_detector.dart';
 import 'package:open_wearable/apps/rhythm_trainer/model/pipeline/window_Manager.dart';
 
-import 'pipeline/feature_extractors/statistical_feature_extractor.dart';
+import '../model/pipeline/feature_extractors/statistical_feature_extractor.dart';
 
 class MotionController {
 
@@ -17,15 +17,14 @@ class MotionController {
       : _sensorDataStream = sensorDataStream,
         _motionPipeline = motionPipeline;
 
-  late int timeStampLastMotion;
-  late StreamSubscription<List<SensorValue>> sub;
+  StreamSubscription<List<SensorValue>>? sub;
 
 
   void subscribeMotionData(void Function(List<SensorValue>, int) listenFunc){
 
     sub = _sensorDataStream.listen((event) {
 
-      timeStampLastMotion = _motionPipeline.processData(event);
+      int timeStampLastMotion = _motionPipeline.processData(event);
       listenFunc(event, timeStampLastMotion);
 
     });
@@ -50,13 +49,12 @@ class MotionController {
 
   void cancelSubscription(){
 
-    sub.cancel();
+    sub?.cancel();
   }
 
   void updateStream(Stream<List<SensorValue>> newStream){
 
     if(newStream == _sensorDataStream) return;
-    cancelSubscription();
     _sensorDataStream = newStream;
 
   }

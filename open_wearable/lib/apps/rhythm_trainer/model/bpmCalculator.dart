@@ -4,6 +4,7 @@ class BPMcalculator implements MotionUpdatable {
 
     final List<int> motionTimestamps = [];
     bool isCalculating = true;
+    late int bpm;
 
     @override
     void update(int timeStampLastMotion) {
@@ -25,10 +26,15 @@ class BPMcalculator implements MotionUpdatable {
         }
 
         double avgTimeDiff = sum / (length - 1) / 1000.0; 
-        int bpm = (60.0 / avgTimeDiff).toInt() * 2; // For some reason we need to multiply by 2 to get the correct BPM
+        bpm = (60.0 / avgTimeDiff).toInt() * 2; // For some reason we need to multiply by 2 to get the correct BPM
         print("Estimated BPM: $bpm");
         isCalculating = false;
         motionTimestamps.clear();
     }
+
+  int getBPM(){
+
+    return bpm;
+  }
   
 }

@@ -1,5 +1,5 @@
 import 'package:open_wearable/apps/rhythm_trainer/model/pipeline/feature_extractors/feature_extractor.dart';
-import 'package:open_wearable/apps/rhythm_trainer/model/math.dart';
+import 'package:open_wearable/apps/rhythm_trainer/model/libs/math.dart';
 import 'package:open_earable_flutter/open_earable_flutter.dart';
 
 class StatisticalFeatureExtractor implements FeatureExtractor {

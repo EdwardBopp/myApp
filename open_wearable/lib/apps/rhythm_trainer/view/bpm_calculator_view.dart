@@ -3,36 +3,32 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_platform_widgets/flutter_platform_widgets.dart';
 import 'package:open_earable_flutter/open_earable_flutter.dart';
+import 'package:open_wearable/apps/rhythm_trainer/model/bpmCalculator.dart';
 import 'package:open_wearable/apps/rhythm_trainer/model/motion_updatable.dart';
 import 'package:open_wearable/apps/rhythm_trainer/model/pipeline/feature_extractors/statistical_feature_extractor.dart';
 import 'package:open_wearable/apps/rhythm_trainer/model/pipeline/feature_extractors/zero_crossing_extractor.dart';
 import 'package:open_wearable/apps/rhythm_trainer/model/pipeline/motion_Pipeline.dart';
 import 'package:open_wearable/apps/rhythm_trainer/model/pipeline/motion_detectors/nod_motion_detector.dart';
 import 'package:open_wearable/apps/rhythm_trainer/model/pipeline/window_Manager.dart';
+import 'package:open_wearable/apps/rhythm_trainer/view/start_restart_button.dart';
 
 
+class BpmCalculatorView extends StatefulWidget {
 
-
-class MotionDetector extends StatefulWidget {
-
-  final Sensor acceleroMeter;
-  final Sensor gyroscope;
   final Stream<List<SensorValue>>? sensorDataStream;
-  final MotionUpdatable motionUpdatable;
-  const MotionDetector({super.key, required this.acceleroMeter, required this.gyroscope, required this.sensorDataStream, required this.motionUpdatable});
+  final BPMcalculator bpmCalculator;
+  const BpmCalculatorView({super.key, required this.sensorDataStream, required this.bpmCalculator});
 
   @override
-  State<MotionDetector> createState() => _MotionDetectorState();
+  State<BpmCalculatorView> createState() => _BpmCalculatorViewState();
 }
 
-class _MotionDetectorState extends State<MotionDetector> {
+class _BpmCalculatorViewState extends State<BpmCalculatorView> {
 
-  late Sensor acceleroMeter;
-  late Sensor gyroscope;
   late Stream<List<SensorValue>>? sensorDataStream;
-  late MotionUpdatable motionUpdatable;
+  late BPMcalculator bpmCalculator;
   
-  final MotionPipeline motionPipeline = MotionPipeline(
+  MotionPipeline motionPipeline = MotionPipeline(
     windowManagers: [
       WindowManager(windowSize: 60, overlap: 0.5),
       WindowManager(windowSize: 60, overlap: 0.5),
@@ -51,23 +47,18 @@ class _MotionDetectorState extends State<MotionDetector> {
   void initState() {   
 
     super.initState();
-    acceleroMeter = widget.acceleroMeter;
-    gyroscope = widget.gyroscope;
     sensorDataStream = widget.sensorDataStream;
     
-    motionUpdatable = widget.motionUpdatable;
+    bpmCalculator = widget.bpmCalculator;
     print("New Init State");
   }
 
   @override
-  void didUpdateWidget(covariant MotionDetector oldWidget) {
+  void didUpdateWidget(covariant BpmCalculatorView oldWidget) {
     
     super.didUpdateWidget(oldWidget);
-
-    acceleroMeter = oldWidget.acceleroMeter != widget.acceleroMeter ? widget.acceleroMeter : oldWidget.acceleroMeter;
-    gyroscope = oldWidget.gyroscope != widget.gyroscope ? widget.gyroscope : oldWidget.gyroscope;
     sensorDataStream = oldWidget.sensorDataStream != widget.sensorDataStream ? widget.sensorDataStream : oldWidget.sensorDataStream; 
-    motionUpdatable = oldWidget.motionUpdatable != widget.motionUpdatable ? widget.motionUpdatable : oldWidget.motionUpdatable;
+    bpmCalculator = oldWidget.bpmCalculator != widget.bpmCalculator ? widget.bpmCalculator : oldWidget.bpmCalculator;
 
   }
 
@@ -89,9 +80,35 @@ class _MotionDetectorState extends State<MotionDetector> {
       child: ListView(
         children: [
           motionNotifier(),
-          PlatformElevatedButton(
-            child: PlatformText("Start Streaming"),
-            onPressed: () {
+
+          Startrestartbutton(
+
+            onRestart: () { 
+            
+              setState(() {
+
+                bpmCalculator = BPMcalculator();
+                motionPipeline = MotionPipeline(
+                  windowManagers: [
+                    WindowManager(windowSize: 60, overlap: 0.5),
+                    WindowManager(windowSize: 60, overlap: 0.5),
+                  ],
+                  featureExtractors: [
+                    [StatisticalFeatureExtractor()],
+                    [StatisticalFeatureExtractor(), ZeroCrossingExtractor()],
+                  ],
+                  motionDetector: NodMotionDetector(),
+                );
+
+                sub?.cancel();
+                
+                motionDetected = false;
+              
+              });
+              
+            },
+
+            onStart: () {
 
               sub = sensorDataStream?.listen((event) {
 
@@ -99,7 +116,14 @@ class _MotionDetectorState extends State<MotionDetector> {
 
                 if(motion != -1){
 
-                  motionUpdatable.update(motion);
+                  bpmCalculator.update(motion);
+
+                  if(!bpmCalculator.isCalculating){
+
+                    print("BPM Calculation finished, resetting...");
+                  
+
+                  }
 
                   setState(() {
                     motionDetected = true;
@@ -112,7 +136,7 @@ class _MotionDetectorState extends State<MotionDetector> {
                     });
                   });
                 }
-              });           
+              });  
             },
           ),
         ],

@@ -5,6 +5,9 @@ import 'package:flutter_platform_widgets/flutter_platform_widgets.dart';
 import 'package:open_earable_flutter/open_earable_flutter.dart';
 import 'package:open_wearable/apps/rhythm_trainer/model/bpmCalculator.dart';
 import 'package:open_wearable/apps/rhythm_trainer/model/exercise.dart';
+import 'package:open_wearable/apps/rhythm_trainer/model/musical_symbol.dart';
+import 'package:open_wearable/apps/rhythm_trainer/view/bpm_calculator_view.dart';
+import 'package:open_wearable/apps/rhythm_trainer/view/excersise_view.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:open_wearable/apps/rhythm_trainer/model/motion_detector.dart';
 import 'package:open_wearable/view_models/sensor_configuration_provider.dart';
@@ -102,12 +105,10 @@ class _RhythmTrainerViewState extends State<RhythmTrainerView> {
                 case 1:
                   return Center(
                     
-                    child:  MotionDetector(
+                    child:  BpmCalculatorView(
                       
-                      sensorDataStream: sensorDataStream,
-                      acceleroMeter: acceleroMeter,
-                      gyroscope: gyroscope,
-                      motionUpdatable: BPMcalculator(),
+                      sensorDataStream: sensorDataStream,                    
+                      bpmCalculator: BPMcalculator(),
                     ),
                   );
 
@@ -137,13 +138,11 @@ class _RhythmTrainerViewState extends State<RhythmTrainerView> {
                                       appBar: PlatformAppBar(
                                         title: PlatformText("Exercise 1"),
                                       ),
-                                      body: MotionDetector(
+                                      body: ExerciseView(
 
                                         sensorDataStream: sensorDataStream,                               
-                                        acceleroMeter: acceleroMeter,
-                                        gyroscope: gyroscope,
-                                        motionUpdatable: Exercise(
-                                          rhythmPattern: [1.0, 1.0, 1.0], 
+                                        exercise: Exercise(
+                                          rhythmPattern: [MusicalSymbol.quarterNote, MusicalSymbol.restHalf, MusicalSymbol.quarterNote], 
                                           name: "Exercise 1",),
                                       ),
                                     );                   
@@ -172,13 +171,11 @@ class _RhythmTrainerViewState extends State<RhythmTrainerView> {
                                     appBar: PlatformAppBar(
                                       title: PlatformText("Exercise 2"),
                                     ),
-                                    body: MotionDetector(
+                                    body: ExerciseView(
                                       
                                       sensorDataStream: sensorDataStream,
-                                      acceleroMeter: acceleroMeter,
-                                      gyroscope: gyroscope,
-                                      motionUpdatable: Exercise(
-                                        rhythmPattern: [1.0, 0.5, 0.5, 1.0], 
+                                      exercise: Exercise(
+                                        rhythmPattern: [MusicalSymbol.restEighth, MusicalSymbol.eighthNote, MusicalSymbol.quarterNote, MusicalSymbol.quarterNote, MusicalSymbol.quarterNote], 
                                         name: "Exercise 2",
                                         ),
                                       ),

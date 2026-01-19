@@ -1,10 +1,10 @@
+import 'package:flutter/material.dart';
 import 'package:open_wearable/apps/rhythm_trainer/model/motion_updatable.dart';
-import 'package:open_wearable/apps/rhythm_trainer/model/musical_symbol.dart';
+import 'package:open_wearable/apps/rhythm_trainer/model/musical_symbol.dart' as rt;
 
+class Exercise extends ChangeNotifier implements MotionUpdatable {
 
-class Exercise implements MotionUpdatable {
-
-  final List<MusicalSymbol> rhythmPattern;
+  final List<rt.MusicalSymbol> rhythmPattern;
   final List<double> rhythmPatternDurations = [];
   final String name;
   List<int> motionTimestamps = [];
@@ -13,6 +13,7 @@ class Exercise implements MotionUpdatable {
   final bool countIn;
   int delayToFirstMotion = 4000;
   bool exerciseFinished = false;
+  bool errorHappened = false;
 
   Exercise({required this.rhythmPattern, required this.name, this.countIn = true}) {
     
@@ -24,6 +25,8 @@ class Exercise implements MotionUpdatable {
 
   @override
   void update(int timeStampLastMotion) {
+
+    if(exerciseFinished || errorHappened) return;
 
     if(motionTimestamps.isEmpty && ((timeStampLastMotion - firstTimeStamp) / 2) - delayToFirstMotion < -500){
 
@@ -41,9 +44,23 @@ class Exercise implements MotionUpdatable {
       if(((motionTimestamps.first - firstTimeStamp) / 2.0 - delayToFirstMotion).abs() > 500){ 
         
         print("not precise enough");
-        
+        errorHappened = true;
+        notifyListeners();   // First motion is not precise enough
+        return;
       }
     }
+
+    double diff = (motionTimestamps.last - motionTimestamps[motionTimestamps.length - 2]) / 1000 / 2;
+
+    if(diff - rhythmPatternDurations[motionTimestamps.length - 2].abs() > 0.2){
+
+      print("Large delay detected"); 
+      errorHappened = true;
+      notifyListeners();   // consecutive motion is not precise enough
+      return;
+    }
+
+    notifyListeners(); // motion accepted
 
     int length = motionTimestamps.length;
 
@@ -66,8 +83,7 @@ class Exercise implements MotionUpdatable {
     }
 
     exerciseFinished = true;
-    motionTimestamps.clear();
-    
+    notifyListeners();
   }
 
   void setFirstTimestamp(int timestamp) {
@@ -77,18 +93,17 @@ class Exercise implements MotionUpdatable {
     firstTimeStampSet = true;
   }
 
-  void convertPatternToDurations(List<MusicalSymbol> pattern){
+  void convertPatternToDurations(List<rt.MusicalSymbol> pattern){
 
     print("Converting rhythm pattern to durations...");
 
-    for(MusicalSymbol symbol in pattern) {
-
+    for(rt.MusicalSymbol symbol in pattern) {
       switch(symbol) {
 
-        case MusicalSymbol.quarterNote || MusicalSymbol.eighthNote || MusicalSymbol.halfNote || MusicalSymbol.wholeNote:
+        case rt.MusicalSymbol.quarterNote || rt.MusicalSymbol.eighthNote || rt.MusicalSymbol.halfNote || rt.MusicalSymbol.wholeNote:
           rhythmPatternDurations.add(symbol.duration);
 
-        case MusicalSymbol.restQuarter || MusicalSymbol.restEighth || MusicalSymbol.restHalf || MusicalSymbol.restWhole: 
+        case rt.MusicalSymbol.restQuarter || rt.MusicalSymbol.restEighth || rt.MusicalSymbol.restHalf || rt.MusicalSymbol.restWhole: 
 
           if(rhythmPatternDurations.isEmpty) {
 
@@ -108,5 +123,11 @@ class Exercise implements MotionUpdatable {
     print("Rhythm Pattern $rhythmPattern");
 
    
+  }
+
+
+  int getAmountMotions(){
+
+    return motionTimestamps.length;
   }
 }

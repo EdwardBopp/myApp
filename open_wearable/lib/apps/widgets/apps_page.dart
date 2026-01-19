@@ -69,11 +69,11 @@ List<AppInfo> _apps = [
     logoPath: "lib/apps/rhythm_trainer/assets/logo.png",
     title: "Rhythm Trainer",
     description: "Train your sense of rhythm with audio cues",
-    widget: SelectEarableView(startApp: (wearable, sensorConfigProvider) {
+    widget: RhythmTrainerView(),
 
-      return RhythmTrainerView(wearable: wearable);
       
-    },),
+      
+    
   ),
 ];
 

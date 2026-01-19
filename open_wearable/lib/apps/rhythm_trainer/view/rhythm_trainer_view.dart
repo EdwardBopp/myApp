@@ -8,7 +8,6 @@ import 'package:open_wearable/apps/rhythm_trainer/model/exercise.dart';
 import 'package:open_wearable/apps/rhythm_trainer/model/musical_symbol.dart';
 import 'package:open_wearable/apps/rhythm_trainer/view/bpm_calculator_view.dart';
 import 'package:open_wearable/apps/rhythm_trainer/view/excersise_view.dart';
-import 'package:rxdart/rxdart.dart';
 import 'package:open_wearable/view_models/sensor_configuration_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -16,11 +15,11 @@ import 'package:provider/provider.dart';
 
 class RhythmTrainerView extends StatefulWidget {
 
-  final Wearable wearable;
+  //final Wearable wearable;
 
   const RhythmTrainerView({
     super.key, 
-    required this.wearable,
+    //required this.wearable,
   });
 
   @override
@@ -31,16 +30,32 @@ class RhythmTrainerView extends StatefulWidget {
 
 class _RhythmTrainerViewState extends State<RhythmTrainerView> {
 
-  late final Wearable wearable;
+  /*late final Wearable wearable;
   late final Sensor acceleroMeter;
-  late final Sensor gyroscope;
+  late final Sensor gyroscope;*/
   Stream<List<SensorValue>>? sensorDataStream;
 
   @override
   void initState() {
 
     super.initState();
-    wearable = widget.wearable;
+    sensorDataStream = Stream<List<SensorValue>>.periodic(
+      Duration(milliseconds: 1000), 
+      (count) {
+
+        List<SensorValue> sensorTuple = [SensorDoubleValue(timestamp: count, values: [1.0, 1.0, 1.0]),
+                                        SensorDoubleValue(timestamp: count, values: [1.0, 1.0, 1.0]), 
+                                        ];
+
+        
+        return sensorTuple;
+
+      },
+    ).asBroadcastStream();
+  
+
+
+    /*wearable = widget.wearable;
     
     if(wearable is SensorManager) {
     
@@ -77,7 +92,7 @@ class _RhythmTrainerViewState extends State<RhythmTrainerView> {
         });        
       });
  
-    }
+    }*/
 
   }
 
@@ -91,8 +106,8 @@ class _RhythmTrainerViewState extends State<RhythmTrainerView> {
       appBar: PlatformAppBar(
         title: PlatformText("Rhythm Trainer"),
       ),
-      body: (wearable is SensorManager)
-          ? 
+      body: //(wearable is SensorManager)
+          //? 
           PlatformTabScaffold(
 
             tabController: PlatformTabController(initialIndex: 0),
@@ -204,11 +219,11 @@ class _RhythmTrainerViewState extends State<RhythmTrainerView> {
             ],
 
 
-          ) 
+          ), 
                
-          : Center(
+          /*: Center(
               child: PlatformText("No eSense device connected"),
-            ),
+            ),*/
     );
   }
 

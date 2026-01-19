@@ -6,6 +6,9 @@ import 'package:open_earable_flutter/open_earable_flutter.dart';
 import 'package:open_wearable/apps/rhythm_trainer/model/exercise.dart';
 import 'package:open_wearable/apps/rhythm_trainer/controller/exercise_controller.dart';
 import 'package:open_wearable/apps/rhythm_trainer/view/start_restart_button.dart';
+import 'package:simple_sheet_music/simple_sheet_music.dart';
+import 'package:open_wearable/apps/rhythm_trainer/model/libs/symbol_converter.dart';
+import 'package:open_wearable/apps/rhythm_trainer/model/libs/symbols.dart';
 
 class ExerciseView extends StatefulWidget {
 
@@ -25,6 +28,10 @@ class _ExerciseViewState extends State<ExerciseView> {
   int countdownVal = 4;
   late Widget countDown;
   Timer? countdownTimer;
+
+  late final Measure measure;
+  late Widget sheet;
+  
   
   @override
   void initState() {   
@@ -38,6 +45,13 @@ class _ExerciseViewState extends State<ExerciseView> {
 
     countDown = PlatformText(countdownVal.toString());
     print("New Init State");
+
+    // Define musical measures
+
+    List<MusicalSymbol> symbolList = widget.exercise.rhythmPattern.map(SymbolConverter.convert).toList();
+    symbolList.insert(0, clef);
+    measure = Measure(symbolList);
+   
   }
 
   @override
@@ -46,6 +60,8 @@ class _ExerciseViewState extends State<ExerciseView> {
     super.didUpdateWidget(oldWidget);
     exerciseController.updateStream(widget.sensorDataStream);
   }
+
+
 
   @override
   void dispose() {
@@ -93,27 +109,62 @@ class _ExerciseViewState extends State<ExerciseView> {
           
             onRestart: () {
 
-              setState((){
-
-                exerciseController.reset();              
-                motionDetected = false;
-                countdownVal = 4;
-                countDown = PlatformText(countdownVal.toString());
-                countdownTimer?.cancel();     
-                    
-                                    
-              });
+              setState(resetExerciseView);
             },   
+          ),
+
+          PlatformElevatedButton(
+
+            onPressed: () {
+
+              print("Execute motion pressed");
+
+              setState(() {
+
+                measure.musicalSymbols.removeLast();
+                measure.musicalSymbols.add(redQuarterNote);       
+              });
+            },
+
+            child: PlatformText("Execute motion"),
           ),
 
           AnimatedBuilder(
             
-            animation: exerciseController, 
+            animation: exerciseController.exercise, 
             builder: (_, __) {
 
-              bool exerciseFinished = exerciseController.isExerciseCompleted();
+              Exercise exercise = exerciseController.exercise;
 
-              if(exerciseFinished){
+              if(exercise.errorHappened){
+
+                measure.musicalSymbols.removeAt(exercise.getAmountMotions() - 1);
+                measure.musicalSymbols.insert(exercise.getAmountMotions() - 1, redQuarterNote);
+                resetExerciseView();
+
+
+              }else if(!exercise.exerciseFinished){
+              
+                measure.musicalSymbols.removeAt(exercise.getAmountMotions() - 1);
+                measure.musicalSymbols.insert(exercise.getAmountMotions() - 1, greenQuarterNote);
+
+              }else if(exercise.exerciseFinished){
+
+                resetExerciseView();
+              
+              }
+              
+
+              return SimpleSheetMusic(
+
+                height: MediaQuery.of(context).size.height / 8,
+                width: MediaQuery.of(context).size.width,
+                measures: [
+                  measure,
+                ],
+              );
+
+              /*if(exerciseFinished){
 
                 exerciseController.reset();
 
@@ -128,7 +179,7 @@ class _ExerciseViewState extends State<ExerciseView> {
                   title: Text("Exercise Incomplete"),
                   subtitle: Text("Keep going! You haven't finished the exercise yet."),
                 );
-              }
+              }*/
             },
             
           ),
@@ -156,6 +207,23 @@ class _ExerciseViewState extends State<ExerciseView> {
       );
     }
   }
+
+  void resetExerciseView(){
+
+    setState((){
+
+      exerciseController.reset();              
+      motionDetected = false;
+      countdownVal = 4;
+      countDown = PlatformText(countdownVal.toString());
+      countdownTimer?.cancel();     
+          
+                              
+    });
+
+  }
+
+
 
 
 }

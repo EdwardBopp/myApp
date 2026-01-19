@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:open_earable_flutter/open_earable_flutter.dart';
 import 'package:open_wearable/apps/rhythm_trainer/model/exercise.dart';
 import 'package:open_wearable/apps/rhythm_trainer/controller/motion_controller.dart';
@@ -8,9 +7,11 @@ import 'package:open_wearable/apps/rhythm_trainer/model/pipeline/motion_Pipeline
 import 'package:open_wearable/apps/rhythm_trainer/model/pipeline/motion_detectors/nod_motion_detector.dart';
 import 'package:open_wearable/apps/rhythm_trainer/model/pipeline/window_Manager.dart';
 
-class ExerciseController extends ChangeNotifier{
+class ExerciseController {
+
 
   Exercise _exercise;
+  Exercise get exercise => _exercise;
   final MotionController _motionController;
 
   ExerciseController({required Exercise exercise, required Stream<List<SensorValue>> sensorDataStream})
@@ -40,7 +41,6 @@ class ExerciseController extends ChangeNotifier{
       if(motion != -1){
 
         _exercise.update(motion);
-        notifyListeners();
       }
     });
   }

@@ -34,6 +34,7 @@ class StatisticalFeatureExtractor implements FeatureExtractor {
 
   List<double> convertSensorValueToDouble(SensorValue sensorValues){
 
+    
     List<double> doubleValues = sensorValues.valueStrings.map((e) => double.tryParse(e) ?? 0.0).toList();
     return doubleValues;
   }

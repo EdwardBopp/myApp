@@ -5,13 +5,17 @@ import 'package:open_wearable/apps/rhythm_trainer/model/musical_symbol.dart' as 
 class Exercise extends ChangeNotifier implements MotionUpdatable {
 
   final List<rt.MusicalSymbol> rhythmPattern;
+  late final List<int> notePositions;
   final List<double> rhythmPatternDurations = [];
+  final List<int> motionTimestamps = [];
+
   final String name;
-  List<int> motionTimestamps = [];
+  
   int firstTimeStamp = 0;
   bool firstTimeStampSet = false;
   final bool countIn;
   int delayToFirstMotion = 4000;
+
   bool exerciseFinished = false;
   bool errorHappened = false;
 
@@ -19,6 +23,7 @@ class Exercise extends ChangeNotifier implements MotionUpdatable {
     
     print("Creating Exercise: $name");
     convertPatternToDurations(rhythmPattern);
+    notePositions = getNotePositions(rhythmPattern);
     
   }
 
@@ -28,20 +33,23 @@ class Exercise extends ChangeNotifier implements MotionUpdatable {
 
     if(exerciseFinished || errorHappened) return;
 
-    if(motionTimestamps.isEmpty && ((timeStampLastMotion - firstTimeStamp) / 2) - delayToFirstMotion < -500){
+    bool firstMotionTooEarly = motionTimestamps.isEmpty && timeStampDiffInMs(timeStampLastMotion, firstTimeStamp) - delayToFirstMotion < -500;
 
-      print(((timeStampLastMotion - firstTimeStamp) / 2));
+    if(firstMotionTooEarly){
+
+      print(timeStampDiffInMs(timeStampLastMotion, firstTimeStamp));
       print("Too early motion detected, waiting for the first motion...");
       return;
     } 
 
     motionTimestamps.add(timeStampLastMotion);
 
+
     if(motionTimestamps.length == 1) {
 
-      print((motionTimestamps.first - firstTimeStamp) / 2.0);
+      print(timeStampDiffInMs(motionTimestamps.first, firstTimeStamp));
       
-      if(((motionTimestamps.first - firstTimeStamp) / 2.0 - delayToFirstMotion).abs() > 500){ 
+      if((timeStampDiffInMs(motionTimestamps.first, firstTimeStamp) - delayToFirstMotion).abs() > 500){ 
         
         print("not precise enough");
         errorHappened = true;
@@ -125,9 +133,39 @@ class Exercise extends ChangeNotifier implements MotionUpdatable {
    
   }
 
+  List<int> getNotePositions(List<rt.MusicalSymbol> pattern){
 
-  int getAmountMotions(){
+    int position = 0;
+    List<int> positions = [];
 
-    return motionTimestamps.length;
+    for(rt.MusicalSymbol symbol in pattern) {
+
+      switch(symbol) {
+
+        case rt.MusicalSymbol.quarterNote || rt.MusicalSymbol.eighthNote || rt.MusicalSymbol.halfNote || rt.MusicalSymbol.wholeNote:
+          positions.add(position);
+
+        case rt.MusicalSymbol.restQuarter || rt.MusicalSymbol.restEighth || rt.MusicalSymbol.restHalf || rt.MusicalSymbol.restWhole: 
+          
+      }
+
+      position += 1;
+    }
+
+    return positions;
   }
+
+  int getCurrentNotePosition(){
+
+    return notePositions[motionTimestamps.length - 1];
+  }
+
+  int timeStampDiffInMs(int timestamp1, int timestamp2){
+
+    return ((timestamp1 - timestamp2) / 2).toInt();
+  }
+
+
+
+
 }

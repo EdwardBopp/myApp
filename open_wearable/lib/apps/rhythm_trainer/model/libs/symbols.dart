@@ -22,7 +22,7 @@ class Symbols {
   static const greenQuarterNote = Note(Pitch.g4, noteDuration: NoteDuration.quarter, color: Colors.green);
   static const greenEighthNote = Note(Pitch.g4, noteDuration: NoteDuration.eighth, color: Colors.green);
 
-  Map<NoteDuration, Map<Color, Note>> get coloredNotes => {
+  static Map<NoteDuration, Map<Color, Note>> coloredNotes = {
     NoteDuration.whole: {
       Colors.black: blackWholeNote,
       Colors.red: redWholeNote,

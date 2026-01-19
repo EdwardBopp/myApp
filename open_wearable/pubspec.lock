@@ -790,7 +790,7 @@ packages:
       path: "."
       ref: HEAD
       resolved-ref: b73ddc7a2a74cd7505a1b6f84471f4fec742b44f
-      url: "git@github.com:EdwardBopp/simple_sheet_music.git"
+      url: "https://github.com/EdwardBopp/simple_sheet_music.git"
     source: git
     version: "1.0.0"
   sky_engine:

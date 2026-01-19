@@ -49,7 +49,7 @@ class _ExerciseViewState extends State<ExerciseView> {
     // Define musical measures
 
     List<MusicalSymbol> symbolList = widget.exercise.rhythmPattern.map(SymbolConverter.convert).toList();
-    symbolList.insert(0, clef);
+    symbolList.insert(0, Symbols.clef);
     measure = Measure(symbolList);
    
   }
@@ -121,8 +121,7 @@ class _ExerciseViewState extends State<ExerciseView> {
 
               setState(() {
 
-                measure.musicalSymbols.removeLast();
-                measure.musicalSymbols.add(redQuarterNote);       
+                       
               });
             },
 
@@ -138,15 +137,15 @@ class _ExerciseViewState extends State<ExerciseView> {
 
               if(exercise.errorHappened){
 
-                measure.musicalSymbols.removeAt(exercise.getAmountMotions() - 1);
-                measure.musicalSymbols.insert(exercise.getAmountMotions() - 1, redQuarterNote);
+                Note missedNote = measure.musicalSymbols.removeAt(exercise.getCurrentNotePosition()) as Note;
+                measure.musicalSymbols.insert(exercise.getCurrentNotePosition(), Symbols.coloredNotes[missedNote.noteDuration]![Colors.red]!);
                 resetExerciseView();
 
 
               }else if(!exercise.exerciseFinished){
               
-                measure.musicalSymbols.removeAt(exercise.getAmountMotions() - 1);
-                measure.musicalSymbols.insert(exercise.getAmountMotions() - 1, greenQuarterNote);
+                Note hitNote = measure.musicalSymbols.removeAt(exercise.getCurrentNotePosition()) as Note;
+                measure.musicalSymbols.insert(exercise.getCurrentNotePosition(), Symbols.coloredNotes[hitNote.noteDuration]![Colors.green]!);
 
               }else if(exercise.exerciseFinished){
 

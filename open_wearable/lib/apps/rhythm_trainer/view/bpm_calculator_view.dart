@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_platform_widgets/flutter_platform_widgets.dart';
 import 'package:open_earable_flutter/open_earable_flutter.dart';
 import 'package:open_wearable/apps/rhythm_trainer/controller/bpm_calculator_controller.dart';
-import 'package:open_wearable/apps/rhythm_trainer/model/bpmCalculator.dart';
+import 'package:open_wearable/apps/rhythm_trainer/model/bpm_calculator.dart';
 import 'package:open_wearable/apps/rhythm_trainer/view/start_restart_button.dart';
 
 
@@ -89,11 +89,11 @@ class _BpmCalculatorViewState extends State<BpmCalculatorView> {
 
               if(calculating){
 
-                return PlatformText("Calculating BPM...");
+                return PlatformText("Keep going! Calculating BPM...");
 
               } else {
 
-                int bpm = widget.bpmCalculator.getBPM();
+                double bpm = widget.bpmCalculator.getBPM();
                 bpmCalculatorController.reset();
                 return PlatformText("Calculated BPM: $bpm");   
               }

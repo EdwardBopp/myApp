@@ -13,6 +13,7 @@ class ExerciseController {
   Exercise _exercise;
   Exercise get exercise => _exercise;
   final MotionController _motionController;
+  late int lastTimestamp;
 
   ExerciseController({required Exercise exercise, required Stream<List<SensorValue>> sensorDataStream})
       : _exercise = exercise,
@@ -40,8 +41,11 @@ class ExerciseController {
       
       if(motion != -1){
 
+        _exercise.setDiffFactor((event[0].timestamp - lastTimestamp) / 10);
         _exercise.update(motion);
       }
+
+      lastTimestamp = event[0].timestamp;
     });
   }
 

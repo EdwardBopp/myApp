@@ -5,7 +5,7 @@ import 'package:open_wearable/apps/rhythm_trainer/model/musical_symbol.dart' as 
 class Exercise extends ChangeNotifier implements MotionUpdatable {
 
   final List<rt.MusicalSymbol> rhythmPattern;
-  late final List<int> notePositions;
+  late final List<int> _notePositions;
   final List<double> rhythmPatternDurations = [];
   final List<int> motionTimestamps = [];
 
@@ -19,11 +19,13 @@ class Exercise extends ChangeNotifier implements MotionUpdatable {
   bool exerciseFinished = false;
   bool errorHappened = false;
 
+  double _timeStampDiffFactor = 1.0;
+
   Exercise({required this.rhythmPattern, required this.name, this.countIn = true}) {
     
     print("Creating Exercise: $name");
     convertPatternToDurations(rhythmPattern);
-    notePositions = getNotePositions(rhythmPattern);
+    _notePositions = getNotePositions(rhythmPattern);
     
   }
 
@@ -33,7 +35,7 @@ class Exercise extends ChangeNotifier implements MotionUpdatable {
 
     if(exerciseFinished || errorHappened) return;
 
-    bool firstMotionTooEarly = motionTimestamps.isEmpty && timeStampDiffInMs(timeStampLastMotion, firstTimeStamp) - delayToFirstMotion < -500;
+    bool firstMotionTooEarly = motionTimestamps.isEmpty && timeStampDiffInMs(timeStampLastMotion, firstTimeStamp) - 4000 < -500;
 
     if(firstMotionTooEarly){
 
@@ -47,20 +49,24 @@ class Exercise extends ChangeNotifier implements MotionUpdatable {
 
     if(motionTimestamps.length == 1) {
 
+      print("First motion detected at timestamp: $timeStampLastMotion");
       print(timeStampDiffInMs(motionTimestamps.first, firstTimeStamp));
+      print("First time stamp: $firstTimeStamp");
       
       if((timeStampDiffInMs(motionTimestamps.first, firstTimeStamp) - delayToFirstMotion).abs() > 500){ 
         
         print("not precise enough");
         errorHappened = true;
-        notifyListeners();   // First motion is not precise enough
-        return;
       }
+
+      notifyListeners();
+      return;
     }
 
-    double diff = (motionTimestamps.last - motionTimestamps[motionTimestamps.length - 2]) / 1000 / 2;
+    double diff = (motionTimestamps.last - motionTimestamps[motionTimestamps.length - 2]) / 1000 / _timeStampDiffFactor;
+    print("Diff between last two motions: $diff s");
 
-    if(diff - rhythmPatternDurations[motionTimestamps.length - 2].abs() > 0.2){
+    if((diff - rhythmPatternDurations[motionTimestamps.length - 2]).abs() > 0.2){
 
       print("Large delay detected"); 
       errorHappened = true;
@@ -76,7 +82,7 @@ class Exercise extends ChangeNotifier implements MotionUpdatable {
 
     for(int i = 1; i < length; i++){
 
-      double timeDiff = (motionTimestamps[i] - motionTimestamps[i - 1]) / 1000 / 2.0;
+      double timeDiff = (motionTimestamps[i] - motionTimestamps[i - 1]) / 1000 / _timeStampDiffFactor;
       print("Time diff $i: $timeDiff s");
       print("Expected time diff $i: ${rhythmPatternDurations[i - 1]} s");
 
@@ -157,12 +163,23 @@ class Exercise extends ChangeNotifier implements MotionUpdatable {
 
   int getCurrentNotePosition(){
 
+    //print("Getting current note position for motion count: ${motionTimestamps.length}");
+    //print("Note positions: $notePositions");
+
     return notePositions[motionTimestamps.length - 1];
   }
 
+  List<int> get notePositions => _notePositions;
+
   int timeStampDiffInMs(int timestamp1, int timestamp2){
 
-    return ((timestamp1 - timestamp2) / 2).toInt();
+    return ((timestamp1 - timestamp2) / _timeStampDiffFactor).toInt();
+  }
+
+  void setDiffFactor(double factor){
+
+    if(_timeStampDiffFactor != 1.0) return;
+    _timeStampDiffFactor = factor;
   }
 
 

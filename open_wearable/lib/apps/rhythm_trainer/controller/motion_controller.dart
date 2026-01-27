@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:open_earable_flutter/open_earable_flutter.dart';
+import 'package:open_wearable/apps/rhythm_trainer/Test/artificial_stream.dart';
 import 'package:open_wearable/apps/rhythm_trainer/model/pipeline/feature_extractors/zero_crossing_extractor.dart';
 import 'package:open_wearable/apps/rhythm_trainer/model/pipeline/motion_Pipeline.dart';
 import 'package:open_wearable/apps/rhythm_trainer/model/pipeline/motion_detectors/nod_motion_detector.dart';
@@ -20,9 +21,17 @@ class MotionController {
   StreamSubscription<List<SensorValue>>? sub;
 
 
-  void subscribeMotionData(void Function(List<SensorValue>, int) listenFunc){
+  Future<void> subscribeMotionData(void Function(List<SensorValue>, int) listenFunc) async {
 
-    sub = _sensorDataStream.listen((event) {
+    ArtificialStream artificialStream = ArtificialStream();
+    await artificialStream.startArtificialStream(
+      acceleroPath: 'lib/apps/rhythm_trainer/assets/eSense-0723_Accelerometer.csv',
+      gyroPath: 'lib/apps/rhythm_trainer/assets/eSense-0723_Gyroscope.csv',
+    );
+
+    //sub = _sensorDataStream.listen((event) {
+
+    sub = artificialStream.controller!.stream.listen((event) {
 
       int timeStampLastMotion = _motionPipeline.processData(event);
       listenFunc(event, timeStampLastMotion);

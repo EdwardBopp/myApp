@@ -113,21 +113,6 @@ class _ExerciseViewState extends State<ExerciseView> {
             },   
           ),
 
-          PlatformElevatedButton(
-
-            onPressed: () {
-
-              print("Execute motion pressed");
-
-              setState(() {
-
-                       
-              });
-            },
-
-            child: PlatformText("Execute motion"),
-          ),
-
           AnimatedBuilder(
             
             animation: exerciseController.exercise, 
@@ -137,23 +122,26 @@ class _ExerciseViewState extends State<ExerciseView> {
 
               if(exercise.errorHappened){
 
-                Note missedNote = measure.musicalSymbols.removeAt(exercise.getCurrentNotePosition()) as Note;
-                measure.musicalSymbols.insert(exercise.getCurrentNotePosition(), Symbols.coloredNotes[missedNote.noteDuration]![Colors.red]!);
-                resetExerciseView();
+                //print("Error happened");
 
+                //print(measure.musicalSymbols);
+                //print(exercise.getCurrentNotePosition() + 1);
 
-              }else if(!exercise.exerciseFinished){
+                Note missedNote = measure.musicalSymbols.removeAt(exercise.getCurrentNotePosition() + 1) as Note;
+                measure.musicalSymbols.insert(exercise.getCurrentNotePosition() + 1, Symbols.coloredNotes[missedNote.noteDuration]![Colors.red]!);
+               
+              }else if(exercise.motionTimestamps.isNotEmpty){
+
+                //print("Note hit");
+                //print(measure.musicalSymbols);
+                //print(exercise.notePositions);
+                //print(exercise.getCurrentNotePosition() + 1);
               
-                Note hitNote = measure.musicalSymbols.removeAt(exercise.getCurrentNotePosition()) as Note;
-                measure.musicalSymbols.insert(exercise.getCurrentNotePosition(), Symbols.coloredNotes[hitNote.noteDuration]![Colors.green]!);
+                Note hitNote = measure.musicalSymbols.removeAt(exercise.getCurrentNotePosition() + 1) as Note;
+                measure.musicalSymbols.insert(exercise.getCurrentNotePosition() + 1, Symbols.coloredNotes[hitNote.noteDuration]![Colors.green]!);
 
-              }else if(exercise.exerciseFinished){
-
-                resetExerciseView();
-              
               }
               
-
               return SimpleSheetMusic(
 
                 height: MediaQuery.of(context).size.height / 8,
@@ -162,29 +150,8 @@ class _ExerciseViewState extends State<ExerciseView> {
                   measure,
                 ],
               );
-
-              /*if(exerciseFinished){
-
-                exerciseController.reset();
-
-                return PlatformListTile(
-                  title: Text("Exercise Completed"),
-                  subtitle: Text("Well done! You have completed the exercise."),
-                );
-
-              } else {
-
-                return PlatformListTile(
-                  title: Text("Exercise Incomplete"),
-                  subtitle: Text("Keep going! You haven't finished the exercise yet."),
-                );
-              }*/
-            },
-            
+            },          
           ),
-
-
-
         ],
       ),
     );
@@ -215,9 +182,14 @@ class _ExerciseViewState extends State<ExerciseView> {
       motionDetected = false;
       countdownVal = 4;
       countDown = PlatformText(countdownVal.toString());
-      countdownTimer?.cancel();     
-          
-                              
+      countdownTimer?.cancel();   
+  
+      for(int indexNote in exerciseController.exercise.notePositions){
+
+        indexNote++;
+        Note note = measure.musicalSymbols[indexNote] as Note;
+        measure.musicalSymbols[indexNote] = Symbols.coloredNotes[note.noteDuration]![Colors.black]!;
+      }                           
     });
 
   }

@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_platform_widgets/flutter_platform_widgets.dart';
 import 'package:open_earable_flutter/open_earable_flutter.dart';
-import 'package:open_wearable/apps/rhythm_trainer/model/bpmCalculator.dart';
+import 'package:open_wearable/apps/rhythm_trainer/model/bpm_calculator.dart';
 import 'package:open_wearable/apps/rhythm_trainer/model/exercise.dart';
 import 'package:open_wearable/apps/rhythm_trainer/model/musical_symbol.dart';
 import 'package:open_wearable/apps/rhythm_trainer/view/bpm_calculator_view.dart';
@@ -156,7 +156,7 @@ class _RhythmTrainerViewState extends State<RhythmTrainerView> {
 
                                         sensorDataStream: sensorDataStream!,                               
                                         exercise: Exercise(
-                                          rhythmPattern: [MusicalSymbol.quarterNote, MusicalSymbol.restHalf, MusicalSymbol.quarterNote], 
+                                          rhythmPattern: [MusicalSymbol.restQuarter, MusicalSymbol.quarterNote, MusicalSymbol.quarterNote, MusicalSymbol.quarterNote], 
                                           name: "Exercise 1",),
                                       ),
                                     );                   

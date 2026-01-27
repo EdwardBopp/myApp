@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:open_earable_flutter/open_earable_flutter.dart';
 import 'package:open_wearable/apps/rhythm_trainer/controller/motion_controller.dart';
-import 'package:open_wearable/apps/rhythm_trainer/model/bpmCalculator.dart';
+import 'package:open_wearable/apps/rhythm_trainer/model/bpm_calculator.dart';
 import 'package:open_wearable/apps/rhythm_trainer/model/pipeline/feature_extractors/statistical_feature_extractor.dart';
 import 'package:open_wearable/apps/rhythm_trainer/model/pipeline/feature_extractors/zero_crossing_extractor.dart';
 import 'package:open_wearable/apps/rhythm_trainer/model/pipeline/motion_Pipeline.dart';
@@ -12,6 +12,7 @@ class BPMCalculatorController extends ChangeNotifier{
 
   BPMcalculator bpmCalculator;
   MotionController motionController;
+  late int lastTimestamp;
 
 
   BPMCalculatorController({required Stream<List<SensorValue>> sensorDataStream, required BPMcalculator bpmCalc})
@@ -44,9 +45,13 @@ class BPMCalculatorController extends ChangeNotifier{
       
       if(motion != -1){
 
+        bpmCalculator.setDiffFactor((event[0].timestamp - lastTimestamp) / 10);
+
         bpmCalculator.update(motion);
         notifyListeners();
       }
+
+      lastTimestamp = event[0].timestamp;
     });
   }
 

@@ -11,7 +11,6 @@ class MotionPipeline {
 
   int debugCounter = 0;
   int motionCounter = 0;
-  bool windowReady = false;
 
   List<SensorValue>? lastWindow;
 
@@ -25,6 +24,7 @@ class MotionPipeline {
   int processData(List<SensorValue> sensorValues) {
 
     Map<String, double> allFeatures = {};
+    bool windowReady = false;
 
 
     for(int i = 0; i < sensorValues.length; i++) {
@@ -56,8 +56,8 @@ class MotionPipeline {
     if(motion != -1) {
 
       motionCounter += 1;
-      print("Motion Detected! Total motions detected: $motionCounter");
-      printDebugInfo(allFeatures);
+      //print("Motion Detected! Total motions detected: $motionCounter");
+      //printDebugInfo(allFeatures);
       
     }else if(windowReady) {
 
@@ -88,7 +88,7 @@ class MotionPipeline {
 
     for(SensorValue sv in window) {
 
-      //print("Sample $counter: ${sv.valueStrings.toString()} at ${sv.timestamp}");
+      print("Sample $counter: ${sv.valueStrings.toString()} at ${sv.timestamp}");
       counter++;
     }
 
